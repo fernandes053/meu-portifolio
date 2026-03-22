@@ -1,113 +1,116 @@
-# Projeto de Perfil + Link Hub em React
+# Meu portifólio
 
-Este repositório reúne **duas telas** conectadas entre si e ambas foram desenvolvidas por mim:
+Projeto pessoal com **duas experiências conectadas** para apresentar meu perfil, minha evolução nos estudos e meus principais links:
 
-1. **Página inicial estática (HTML + CSS)** com card de perfil, criada do zero por mim.
-2. **Aplicação React (Vite + TypeScript)** também construída por mim, com meus conhecimentos e com apoio de IA para acelerar partes do processo.
+- **Página inicial estática** em HTML e CSS com card de apresentação.
+- **Página de portfólio em React + Vite + TypeScript** com seções sobre mim, skills, certificados e contato.
 
-A ideia é simples: você abre a página inicial, clica no botão e segue para a tela React.
+A proposta é abrir a landing page inicial e, a partir dela, acessar a aplicação React com uma experiência mais completa.
 
 ---
 
-## 📁 Estrutura do projeto
+## Estrutura do projeto
 
-```bash
+```text
 .
-├── index.html                 # Página inicial (card de perfil)
-├── style.css                  # Estilos da página inicial
-├── images/                    # Imagens e favicon da página inicial
-└── link-hub-pro-main/         # App React (Vite + TS)
-    ├── index.html
-    ├── package.json
-    ├── vite.config.ts
-    └── src/
+├── index.html                       # Página inicial estática
+├── style.css                        # Estilos da landing page
+├── images/                          # Foto e favicon da primeira página
+├── README.md                        # Documentação principal
+└── student-coder-journey-main/      # Aplicação React (segunda página)
+    ├── index.html                   # Entrada da aplicação
+    ├── package.json                 # Scripts e dependências
+    ├── public/                      # Assets públicos, incluindo favicon
+    └── src/                         # Código-fonte React
 ```
 
 ---
 
+## Tecnologias utilizadas
 
-## ✍️ Autoria e contexto
-
-- A **primeira página** (HTML/CSS básico) foi feita por mim, de forma autoral.
-- A **segunda tela** em React também foi feita por mim, aplicando meus conhecimentos.
-- Em alguns momentos, utilizei **IA como apoio** (ideias, ajustes e produtividade), mas o projeto foi desenvolvido por mim.
-
----
-
-## 🚀 Tecnologias utilizadas
-
-### Página inicial
+### Primeira página
 - HTML5
 - CSS3
+- Google Fonts
 
-### Página React
+### Segunda página
 - React 18
 - Vite
 - TypeScript
-- Radix UI / utilitários de UI (dependências do projeto)
+- Tailwind CSS
+- Framer Motion
+- Radix UI
+- React Router
+- Vitest
 
 ---
 
-## ▶️ Como executar o projeto
+## Como executar localmente
 
-> Recomendado: usar **dois terminais**.
-
-### 1) Subir a aplicação React
-
-No terminal 1:
+### 1. Suba a aplicação React
 
 ```bash
-cd link-hub-pro-main
+cd student-coder-journey-main
 npm install
 npm run dev
 ```
 
-A aplicação React é servida na porta `8080`.
+Por padrão, o Vite disponibiliza a aplicação em `http://localhost:8080/` neste projeto.
 
-### 2) Abrir a página inicial estática
+### 2. Abra a página inicial estática
 
-No terminal 2 (na raiz do projeto):
+Na raiz do repositório, você pode:
 
-- Opção A (VS Code): extensão **Live Server**
-- Opção B (Node):
+- abrir `index.html` com uma extensão como **Live Server**; ou
+- servir a pasta com um servidor simples.
+
+Exemplo:
 
 ```bash
 npx serve .
 ```
 
-Depois, abra o `index.html` raiz no navegador e clique em **“Ir para outra página”**.
+Depois, abra a página inicial no navegador e clique no botão para ir para a página React.
 
 ---
 
-## 🔄 Fluxo de navegação
+## Fluxo de navegação
 
-1. Você acessa a página inicial (`/index.html`).
-2. Clica no botão do card.
-3. O navegador abre `link-hub-pro-main/index.html`.
-4. Esse arquivo encaminha para `http://localhost:8080/` quando necessário, garantindo que o React rode via Vite.
-
----
-
-## ✅ Pontos positivos para apresentação
-
-- Separação clara entre uma tela estática e uma SPA em React.
-- Estrutura de projeto organizada por responsabilidade.
-- Setup simples para desenvolvimento local.
-- Boa base para evolução (rotas, backend, deploy etc.).
+1. O visitante acessa a **página inicial**.
+2. Visualiza o card com a apresentação pessoal.
+3. Clica em **Ir para a página React**.
+4. É direcionado para a **segunda página**, onde está o portfólio completo.
 
 ---
 
-## 🛠️ Próximas melhorias sugeridas
+## O que o projeto apresenta
 
-- Melhorar os textos de apresentação e dados do perfil.
-- Criar uma rota interna no React para unificar ainda mais o fluxo.
-- Adicionar testes básicos (Vitest/RTL).
-- Fazer deploy da versão React e da landing page.
+- Identidade visual pessoal.
+- Resumo profissional e acadêmico.
+- Organização de conteúdo em seções.
+- Espaço para evolução contínua com novos projetos, links e certificados.
 
 ---
 
-## 👤 Autor
+## Melhorias futuras
+
+- Publicar uma versão online com deploy.
+- Adicionar projetos reais na seção principal do portfólio.
+- Criar formulários ou integrações para contato.
+- Adicionar testes visuais e de navegação.
+- Unificar ainda mais a experiência entre a landing page e a SPA.
+
+---
+
+## Observação sobre o nome do repositório
+
+O nome de apresentação do projeto foi atualizado para **Meu portifólio** nos arquivos do projeto.
+Se você quiser mudar também o nome do repositório hospedado no GitHub, isso precisa ser feito diretamente nas configurações do próprio repositório na plataforma.
+
+---
+
+## Autor
 
 **Leonardo Fernandes Mastroto**
 
-Projeto autoral com apoio de IA como ferramenta de produtividade.
+Projeto autoral desenvolvido como portfólio pessoal, com apoio de IA para produtividade e refinamento.
