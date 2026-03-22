@@ -1,0 +1,56 @@
+@charset "UTF-8";
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px;
+  background: #FFFFFF;
+  border-radius: 10px;
+  box-shadow: 100%;
+  margin: 20px;
+  max-width: 500px;
+  box-shadow: 0px 4px 10px rgb(0, 0, 0);
+  text-align: center;
+}
+
+body {
+  background: linear-gradient(135deg, #3575ff, #07102e);
+  color: #111827;  
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Roboto', sans-serif;
+}
+
+.selfie{
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.botao {
+  background: #2563EB;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: 0.3s;
+}
+
+.botao:hover {
+  background: #1E40AF;
+  transform: scale(1.05);
+}
+
+h2 {
+  color: #111827;
+}
+
+p {
+  color: #6B7280;
+}
+
