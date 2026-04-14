@@ -1,17 +1,45 @@
 import { motion } from "framer-motion";
 import { Code2, GraduationCap, Zap, Terminal } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const languages = ["Python", "JavaScript", "C++", "Dart"];
 
 const stats = [
   { icon: GraduationCap, label: "Semestre", value: "5º" },
   { icon: Zap, label: "Certificados", value: "5+" },
-  { icon: Terminal, label: "Commits", value: "17+" },
+  { icon: Terminal, label: "Commits", value: "0" },
 ];
 
 const AboutSection = () => {
   const [isHovering, setIsHovering] = useState(false);
+  const [commitCount, setCommitCount] = useState<string>(stats[2].value);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    const loadCommitCount = async () => {
+      try {
+        const response = await fetch("/api/commit-count", {
+          signal: abortController.signal,
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (typeof data.commitCount === "number") {
+          setCommitCount(data.commitCount.toLocaleString("pt-BR"));
+        }
+      } catch {
+        // Intencional: mantém fallback local se a API falhar.
+      }
+    };
+
+    void loadCommitCount();
+
+    return () => {
+      abortController.abort();
+    };
+  }, []);
 
   return (
     <section id="about" className="py-24 md:py-32 relative">
@@ -118,7 +146,9 @@ const AboutSection = () => {
                 className="rounded-lg border border-border bg-card p-6 text-center card-glow-hover transition-all duration-300 hover:border-primary/30"
               >
                 <stat.icon className="mx-auto mb-3 text-primary" size={24} />
-                <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {stat.label === "Commits" ? commitCount : stat.value}
+                </p>
                 <p className="font-mono text-xs text-muted-foreground mt-1">{stat.label}</p>
               </motion.div>
             ))}

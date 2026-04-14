@@ -20,3 +20,22 @@ npm run test
 ## Objetivo
 
 Entregar uma experiência mais completa do que a landing page inicial, reunindo apresentação, habilidades, certificados e contato em uma interface moderna.
+
+## Contador de commits (GitHub + Upstash + Vercel Cron)
+
+Para atualizar automaticamente o card de `Commits` da seção "sobre-mim", configure:
+
+- `GITHUB_USERNAME` (ex.: `fernandes053`)
+- `GITHUB_TOKEN` (token com acesso de leitura)
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+- `CRON_SECRET`
+
+Endpoints:
+
+- `GET /api/commit-count`: retorna o total salvo em cache (ou busca no GitHub se cache ainda vazio), somando commits de autoria do usuário nos repositórios do próprio perfil.
+- `GET /api/cron/sync-commit-count`: rota chamada pelo Vercel Cron para sincronizar o contador a cada 1 hora.
+
+Cron:
+
+- Configurado em `vercel.json` com `0 * * * *`.
