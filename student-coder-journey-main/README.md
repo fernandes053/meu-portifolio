@@ -31,6 +31,8 @@ Para atualizar automaticamente o card de `Commits` da seção "sobre-mim", confi
 - `UPSTASH_REDIS_REST_TOKEN`
 - `CRON_SECRET`
 
+> Observação: o Upstash é opcional. Sem `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN`, a API busca direto no GitHub em toda requisição.
+
 Endpoints:
 
 - `GET /api/commit-count`: retorna o total salvo em cache (ou busca no GitHub se cache ainda vazio), somando commits de autoria do usuário nos repositórios do próprio perfil.
