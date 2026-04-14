@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/sync-commit-count",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}
