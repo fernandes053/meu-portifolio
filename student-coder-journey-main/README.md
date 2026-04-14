@@ -35,9 +35,10 @@ Para atualizar automaticamente o card de `Commits` da seção "sobre-mim", confi
 
 Endpoints:
 
-- `GET /api/commit-count`: retorna o total salvo em cache (ou busca no GitHub se cache ainda vazio), somando commits de autoria do usuário nos repositórios do próprio perfil.
-- `GET /api/cron/sync-commit-count`: rota chamada pelo Vercel Cron para sincronizar o contador 1 vez por dia (00:00 UTC).
+- `GET /api/commit-count`: usa cache quando estiver fresco (<24h). Se estiver vazio/expirado, sincroniza no GitHub automaticamente. Se a sincronização falhar, retorna o último cache salvo.
+- `GET /api/cron/sync-commit-count`: rota chamada pelo Vercel Cron para sincronizar o contador 1 vez por dia (00:00 UTC). Aceita `Authorization: Bearer <CRON_SECRET>` e também chamadas internas do Vercel Cron.
 
 Cron:
 
 - Configurado em `vercel.json` com `0 0 * * *` (execução diária às 00:00 UTC).
+- A primeira atualização automática geralmente aparece após a próxima execução do cron (até 24h). Antes disso, acessar `/api/commit-count` já força sincronização quando o cache estiver vazio/expirado.
