@@ -7,8 +7,12 @@ module.exports = async (req, res) => {
 
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.authorization;
+  const vercelCronHeader = req.headers["x-vercel-cron"];
+  const isVercelCronCall = typeof vercelCronHeader === "string" && vercelCronHeader.length > 0;
 
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  const isAuthorizedBySecret = cronSecret && authHeader === `Bearer ${cronSecret}`;
+
+  if (!isAuthorizedBySecret && !isVercelCronCall) {
     return jsonResponse(res, 401, { error: "Unauthorized" });
   }
 

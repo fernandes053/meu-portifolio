@@ -30,7 +30,7 @@ async function upstashSet(key, value) {
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!url || !token) {
-    throw new Error("Variáveis do Upstash não configuradas.");
+    return false;
   }
 
   const response = await fetch(`${url}/set/${encodeURIComponent(key)}`, {
@@ -45,6 +45,8 @@ async function upstashSet(key, value) {
   if (!response.ok) {
     throw new Error("Falha ao salvar contador no Upstash.");
   }
+
+  return true;
 }
 
 async function githubRequest(url, token) {
@@ -130,8 +132,10 @@ async function syncCommitCount() {
   const commitCount = await fetchGitHubCommitCountFromOwnedRepos(username, token);
   const updatedAt = new Date().toISOString();
 
-  await upstashSet("portfolio:commit_count", commitCount);
-  await upstashSet("portfolio:commit_count_updated_at", updatedAt);
+  const cacheSaved = await upstashSet("portfolio:commit_count", commitCount);
+  if (cacheSaved) {
+    await upstashSet("portfolio:commit_count_updated_at", updatedAt);
+  }
 
   return { commitCount, updatedAt };
 }
