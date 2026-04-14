@@ -1,6 +1,6 @@
-const { jsonResponse, syncCommitCount } = require("../_lib/commit-count");
+import { jsonResponse, syncCommitCount } from "../_lib/commit-count.js";
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   if (req.method !== "GET") {
     return jsonResponse(res, 405, { error: "Method not allowed" });
   }
@@ -8,7 +8,8 @@ module.exports = async (req, res) => {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.authorization;
   const vercelCronHeader = req.headers["x-vercel-cron"];
-  const isVercelCronCall = typeof vercelCronHeader === "string" && vercelCronHeader.length > 0;
+  const isVercelCronCall =
+    typeof vercelCronHeader === "string" && vercelCronHeader.length > 0;
 
   const isAuthorizedBySecret = cronSecret && authHeader === `Bearer ${cronSecret}`;
 
@@ -28,4 +29,4 @@ module.exports = async (req, res) => {
       error: error instanceof Error ? error.message : "Erro inesperado.",
     });
   }
-};
+}
