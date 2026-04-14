@@ -1,4 +1,5 @@
 const {
+  isCommitCacheFresh,
   jsonResponse,
   readCachedCommitCount,
   syncCommitCount,
@@ -11,18 +12,31 @@ module.exports = async (req, res) => {
 
   try {
     const cached = await readCachedCommitCount();
-    if (cached) {
+    if (cached && isCommitCacheFresh(cached)) {
       return jsonResponse(res, 200, {
         source: "cache",
         ...cached,
       });
     }
 
-    const fresh = await syncCommitCount();
-    return jsonResponse(res, 200, {
-      source: "github",
-      ...fresh,
-    });
+    try {
+      const fresh = await syncCommitCount();
+      return jsonResponse(res, 200, {
+        source: "github",
+        ...fresh,
+      });
+    } catch (syncError) {
+      if (cached) {
+        return jsonResponse(res, 200, {
+          source: "cache-stale",
+          warning:
+            "Não foi possível sincronizar agora. Exibindo o último valor salvo no cache.",
+          ...cached,
+        });
+      }
+
+      throw syncError;
+    }
   } catch (error) {
     return jsonResponse(res, 500, {
       error: "Não foi possível obter o contador de commits.",
