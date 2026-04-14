@@ -230,7 +230,7 @@ function isCommitCacheFresh(cached) {
   return Date.now() - updatedAtMs < ONE_DAY_IN_MS;
 }
 
-module.exports = {
+export {
   isCommitCacheFresh,
   jsonResponse,
   readCachedCommitCount,
