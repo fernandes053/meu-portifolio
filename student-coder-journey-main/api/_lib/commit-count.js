@@ -3,6 +3,8 @@ function jsonResponse(res, status, payload) {
   res.send(JSON.stringify(payload));
 }
 
+const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
+
 async function upstashGet(key) {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -30,7 +32,7 @@ async function upstashSet(key, value) {
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!url || !token) {
-    throw new Error("Variáveis do Upstash não configuradas.");
+    return false;
   }
 
   const response = await fetch(`${url}/set/${encodeURIComponent(key)}`, {
@@ -45,6 +47,8 @@ async function upstashSet(key, value) {
   if (!response.ok) {
     throw new Error("Falha ao salvar contador no Upstash.");
   }
+
+  return true;
 }
 
 async function githubRequest(url, token) {
@@ -62,6 +66,61 @@ async function githubRequest(url, token) {
   }
 
   return response.json();
+}
+
+async function githubGraphQLRequest(query, variables, token) {
+  const response = await fetch("https://api.github.com/graphql", {
+    method: "POST",
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "User-Agent": "meu-portifolio-commit-counter",
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Erro GitHub GraphQL (${response.status}): ${details}`);
+  }
+
+  const payload = await response.json();
+  if (Array.isArray(payload?.errors) && payload.errors.length > 0) {
+    throw new Error(`Erro GitHub GraphQL: ${payload.errors[0].message}`);
+  }
+
+  return payload?.data ?? null;
+}
+
+async function fetchUserCreatedAt(username, token) {
+  const user = await githubRequest(`https://api.github.com/users/${username}`, token);
+  return typeof user?.created_at === "string" ? user.created_at : null;
+}
+
+async function fetchGitHubCommitCountFromProfile(username, token) {
+  const createdAt = await fetchUserCreatedAt(username, token);
+  const from = createdAt ?? "2008-01-01T00:00:00Z";
+  const to = new Date().toISOString();
+
+  const query = `
+    query ($username: String!, $from: DateTime!, $to: DateTime!) {
+      user(login: $username) {
+        contributionsCollection(from: $from, to: $to) {
+          totalCommitContributions
+        }
+      }
+    }
+  `;
+
+  const data = await githubGraphQLRequest(query, { username, from, to }, token);
+  const total = data?.user?.contributionsCollection?.totalCommitContributions;
+
+  if (!Number.isFinite(total)) {
+    throw new Error("Não foi possível obter total de commits pelo perfil.");
+  }
+
+  return Number(total);
 }
 
 async function fetchOwnedRepos(username, token) {
@@ -127,11 +186,18 @@ async function syncCommitCount() {
     throw new Error("Variáveis GITHUB_USERNAME e/ou GITHUB_TOKEN não configuradas.");
   }
 
-  const commitCount = await fetchGitHubCommitCountFromOwnedRepos(username, token);
+  let commitCount;
+  try {
+    commitCount = await fetchGitHubCommitCountFromProfile(username, token);
+  } catch {
+    commitCount = await fetchGitHubCommitCountFromOwnedRepos(username, token);
+  }
   const updatedAt = new Date().toISOString();
 
-  await upstashSet("portfolio:commit_count", commitCount);
-  await upstashSet("portfolio:commit_count_updated_at", updatedAt);
+  const cacheSaved = await upstashSet("portfolio:commit_count", commitCount);
+  if (cacheSaved) {
+    await upstashSet("portfolio:commit_count_updated_at", updatedAt);
+  }
 
   return { commitCount, updatedAt };
 }
@@ -151,7 +217,21 @@ async function readCachedCommitCount() {
   };
 }
 
-module.exports = {
+function isCommitCacheFresh(cached) {
+  if (!cached || typeof cached.updatedAt !== "string") {
+    return false;
+  }
+
+  const updatedAtMs = Date.parse(cached.updatedAt);
+  if (!Number.isFinite(updatedAtMs)) {
+    return false;
+  }
+
+  return Date.now() - updatedAtMs < ONE_DAY_IN_MS;
+}
+
+export {
+  isCommitCacheFresh,
   jsonResponse,
   readCachedCommitCount,
   syncCommitCount,
