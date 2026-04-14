@@ -1,11 +1,11 @@
-const {
+import {
   isCommitCacheFresh,
   jsonResponse,
   readCachedCommitCount,
   syncCommitCount,
-} = require("./_lib/commit-count");
+} from "./_lib/commit-count.js";
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   if (req.method !== "GET") {
     return jsonResponse(res, 405, { error: "Method not allowed" });
   }
@@ -43,4 +43,4 @@ module.exports = async (req, res) => {
       details: error instanceof Error ? error.message : "Erro inesperado.",
     });
   }
-};
+}
