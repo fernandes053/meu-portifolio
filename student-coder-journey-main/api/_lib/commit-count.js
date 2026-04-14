@@ -200,7 +200,7 @@ async function fetchGitHubCommitCountFromOwnedRepos(username, token) {
 
   let commitCount = 0;
   for (const repo of repos) {
-    if (!repo?.name || repo?.fork) continue;
+    if (!repo?.name) continue;
     const repoCommits = await countAuthorCommitsInRepo(username, repo.name, token);
     commitCount += repoCommits;
   }
@@ -209,15 +209,7 @@ async function fetchGitHubCommitCountFromOwnedRepos(username, token) {
 }
 
 async function fetchGitHubCommitCount(username, token) {
-  try {
-    return await fetchGitHubCommitCountFromSearch(username, token);
-  } catch {
-    try {
-      return await fetchGitHubCommitCountFromProfile(username, token);
-    } catch {
-      return fetchGitHubCommitCountFromOwnedRepos(username, token);
-    }
-  }
+  return fetchGitHubCommitCountFromOwnedRepos(username, token);
 }
 
 async function syncCommitCount() {
