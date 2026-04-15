@@ -4,23 +4,41 @@ function jsonResponse(res, status, payload) {
 }
 
 const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_GITHUB_USERNAME = "fernandes053";
+
+function createError(message, statusCode) {
+  const error = new Error(message);
+  if (Number.isInteger(statusCode)) {
+    error.statusCode = statusCode;
+  }
+  return error;
+}
+
+function buildUpstashUrl(path) {
+  const baseUrl = process.env.UPSTASH_REDIS_REST_URL;
+  if (!baseUrl) {
+    return null;
+  }
+
+  return `${baseUrl.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+}
 
 async function upstashGet(key) {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const url = buildUpstashUrl(`get/${encodeURIComponent(key)}`);
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!url || !token) {
     return null;
   }
 
-  const response = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
+  const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
 
   if (!response.ok) {
-    throw new Error("Falha ao ler contador no Upstash.");
+    throw createError("Falha ao ler contador no Upstash.", response.status);
   }
 
   const payload = await response.json();
@@ -28,14 +46,14 @@ async function upstashGet(key) {
 }
 
 async function upstashSet(key, value) {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const url = buildUpstashUrl(`set/${encodeURIComponent(key)}`);
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!url || !token) {
     return false;
   }
 
-  const response = await fetch(`${url}/set/${encodeURIComponent(key)}`, {
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -45,44 +63,55 @@ async function upstashSet(key, value) {
   });
 
   if (!response.ok) {
-    throw new Error("Falha ao salvar contador no Upstash.");
+    throw createError("Falha ao salvar contador no Upstash.", response.status);
   }
 
   return true;
 }
 
-async function githubRequest(url, token) {
+function buildGitHubHeaders(token, extraHeaders = {}) {
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "meu-portifolio-commit-counter",
+    ...extraHeaders,
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return headers;
+}
+
+async function githubRequest(url, token, extraHeaders) {
   const response = await fetch(url, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${token}`,
-      "User-Agent": "meu-portifolio-commit-counter",
-    },
+    headers: buildGitHubHeaders(token, extraHeaders),
   });
 
   if (!response.ok) {
     const details = await response.text();
-    throw new Error(`Erro GitHub (${response.status}): ${details}`);
+    throw createError(`Erro GitHub (${response.status}): ${details}`, response.status);
   }
 
   return response.json();
 }
 
 async function githubGraphQLRequest(query, variables, token) {
+  if (!token) {
+    throw new Error("GITHUB_TOKEN ausente para consulta GraphQL.");
+  }
+
   const response = await fetch("https://api.github.com/graphql", {
     method: "POST",
-    headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${token}`,
+    headers: buildGitHubHeaders(token, {
       "Content-Type": "application/json",
-      "User-Agent": "meu-portifolio-commit-counter",
-    },
+    }),
     body: JSON.stringify({ query, variables }),
   });
 
   if (!response.ok) {
     const details = await response.text();
-    throw new Error(`Erro GitHub GraphQL (${response.status}): ${details}`);
+    throw createError(`Erro GitHub GraphQL (${response.status}): ${details}`, response.status);
   }
 
   const payload = await response.json();
@@ -117,7 +146,7 @@ async function fetchGitHubCommitCountFromProfile(username, token) {
   const total = data?.user?.contributionsCollection?.totalCommitContributions;
 
   if (!Number.isFinite(total)) {
-    throw new Error("Não foi possível obter total de commits pelo perfil.");
+    throw new Error("Nao foi possivel obter o total de commits pelo perfil.");
   }
 
   return Number(total);
@@ -133,10 +162,14 @@ async function fetchOwnedRepos(username, token) {
       token
     );
 
-    if (!Array.isArray(pageRepos) || pageRepos.length === 0) break;
+    if (!Array.isArray(pageRepos) || pageRepos.length === 0) {
+      break;
+    }
 
     repos.push(...pageRepos);
-    if (pageRepos.length < 100) break;
+    if (pageRepos.length < 100) {
+      break;
+    }
     page += 1;
   }
 
@@ -148,18 +181,30 @@ async function countAuthorCommitsInRepo(username, repoName, token) {
   let page = 1;
 
   while (true) {
-    const commits = await githubRequest(
-      `https://api.github.com/repos/${username}/${repoName}/commits?author=${encodeURIComponent(
-        username
-      )}&per_page=100&page=${page}`,
-      token
-    );
+    try {
+      const commits = await githubRequest(
+        `https://api.github.com/repos/${username}/${repoName}/commits?author=${encodeURIComponent(
+          username
+        )}&per_page=100&page=${page}`,
+        token
+      );
 
-    if (!Array.isArray(commits) || commits.length === 0) break;
+      if (!Array.isArray(commits) || commits.length === 0) {
+        break;
+      }
 
-    total += commits.length;
-    if (commits.length < 100) break;
-    page += 1;
+      total += commits.length;
+      if (commits.length < 100) {
+        break;
+      }
+
+      page += 1;
+    } catch (error) {
+      if (error?.statusCode === 409) {
+        return total;
+      }
+      throw error;
+    }
   }
 
   return total;
@@ -170,7 +215,10 @@ async function fetchGitHubCommitCountFromOwnedRepos(username, token) {
 
   let commitCount = 0;
   for (const repo of repos) {
-    if (!repo?.name || repo?.fork) continue;
+    if (!repo?.name || repo?.fork || repo?.archived || repo?.size === 0) {
+      continue;
+    }
+
     const repoCommits = await countAuthorCommitsInRepo(username, repo.name, token);
     commitCount += repoCommits;
   }
@@ -179,19 +227,24 @@ async function fetchGitHubCommitCountFromOwnedRepos(username, token) {
 }
 
 async function syncCommitCount() {
-  const username = process.env.GITHUB_USERNAME;
+  const username = process.env.GITHUB_USERNAME ?? DEFAULT_GITHUB_USERNAME;
   const token = process.env.GITHUB_TOKEN;
 
-  if (!username || !token) {
-    throw new Error("Variáveis GITHUB_USERNAME e/ou GITHUB_TOKEN não configuradas.");
+  if (!username) {
+    throw new Error("GITHUB_USERNAME nao configurado.");
   }
 
   let commitCount;
-  try {
-    commitCount = await fetchGitHubCommitCountFromProfile(username, token);
-  } catch {
+  if (token) {
+    try {
+      commitCount = await fetchGitHubCommitCountFromProfile(username, token);
+    } catch {
+      commitCount = await fetchGitHubCommitCountFromOwnedRepos(username, token);
+    }
+  } else {
     commitCount = await fetchGitHubCommitCountFromOwnedRepos(username, token);
   }
+
   const updatedAt = new Date().toISOString();
 
   const cacheSaved = await upstashSet("portfolio:commit_count", commitCount);
@@ -230,9 +283,4 @@ function isCommitCacheFresh(cached) {
   return Date.now() - updatedAtMs < ONE_DAY_IN_MS;
 }
 
-export {
-  isCommitCacheFresh,
-  jsonResponse,
-  readCachedCommitCount,
-  syncCommitCount,
-};
+export { isCommitCacheFresh, jsonResponse, readCachedCommitCount, syncCommitCount };
